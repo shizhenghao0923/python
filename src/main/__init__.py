@@ -171,6 +171,8 @@ def analyze_damage_log(lines):
 # ---------------------------------------------------------------------------
 class SentryGrid:
     """哨兵仿真载体（构造与只读属性已提供；四个 TODO 方法由你实现）。"""
+    def get_pos(self):
+        return self.current_pos
 
     def __init__(self, width, height, obstacles, enemy_pos,
                  start_pos=(0, 0), facing=Facing.UP, fuel=100):
