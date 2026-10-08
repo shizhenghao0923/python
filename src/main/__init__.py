@@ -10,6 +10,7 @@
   CI 一开始就是绿的；实现一个，对应测试亮一个。
 - `python main.py`（或 PYTHONPATH=src python -m main）可看 ASCII 演示。
 """
+from collections import deque
 import json
 from enum import Enum
 
@@ -43,11 +44,10 @@ def hp_ratio(hp, max_hp):
     return ratio
 
 
-
 def status_report(name, robot_type, hp, max_hp, battery):
     """TODO(Q1)：一行自检报告字符串；档位判定与逐字符格式见题面 Q1 规范。"""
     hp_percent = hp_ratio(hp, max_hp)
-    
+
     # 判断电量档位
     if battery >= 60:
         level = "OK"
@@ -55,7 +55,7 @@ def status_report(name, robot_type, hp, max_hp, battery):
         level = "WARNING"
     else:
         level = "LOW"
-    
+
     # 按照模板格式化字符串
     report = (
         f"{name:<10}|{robot_type:^10}|HP {hp_percent:>3}%|BAT {battery:>3}%|{level}"
@@ -91,7 +91,8 @@ def analyze_damage_log(lines):
                 armor = obj.get("armor")
                 damage = obj.get("damage")
                 # armor必须是三部位之一，damage是正整数
-                if armor in ["front", "left", "right"] and isinstance(damage, int) and damage > 0:
+                if armor in ["front", "left", "right"] and isinstance(
+                        damage, int) and damage > 0:
                     json_id = obj.get("id")
                     # 带id的，需要去重
                     if json_id is not None:
@@ -110,11 +111,11 @@ def analyze_damage_log(lines):
         if parsed:
             continue
 
-        # ---------------------- 2.尝试解析传感器行 F:32,L:5,R:12 ----------------------
+        # ---------------------- 2.尝试解析传感器行 F:32,L:5,R:12 ---------------------
         try:
             parts = line.split(",")
             valid_sensor = True
-            temp_dict = {"front":0, "left":0, "right":0}
+            temp_dict = {"front": 0, "left": 0, "right": 0}
             for seg in parts:
                 seg = seg.strip()
                 if ":" not in seg:
@@ -138,7 +139,7 @@ def analyze_damage_log(lines):
                 for k in by_armor:
                     by_armor[k] += temp_dict[k]
                 total += sum(temp_dict.values())
-                count_events +=1
+                count_events += 1
         except Exception:
             # 传感器解析失败，当作脏行跳过
             continue
@@ -170,7 +171,6 @@ def analyze_damage_log(lines):
 # ---------------------------------------------------------------------------
 class SentryGrid:
     """哨兵仿真载体（构造与只读属性已提供；四个 TODO 方法由你实现）。"""
-
 
     def __init__(self, width, height, obstacles, enemy_pos,
                  start_pos=(0, 0), facing=Facing.UP, fuel=100):
@@ -283,8 +283,6 @@ class SentryGrid:
             self.current_pos = next_pos
             return self.current_pos
 
-      
-
     def turn_left(self):
         """TODO(Q3)：原地左转 90°，返回新的 Facing（不耗电）。"""
         # 逆时针左转90度
@@ -310,7 +308,6 @@ class SentryGrid:
         return self.facing
 
 
-
 # ---------------------------------------------------------------------------
 # Q4 贪心导航（题面 Q4·单步贪心导航策略）
 # ---------------------------------------------------------------------------
@@ -322,38 +319,38 @@ def next_step_toward(pos, target, obstacles, current_facing=Facing.UP):
     target: (x, y) 目标位置
     obstacles: set of (x,y) 障碍格子集合
     current_facing: Facing枚举
-    
+
     返回：Facing，下一步朝向
     """
     x, y = pos
     tx, ty = target
     current_manhattan = abs(x - tx) + abs(y - ty)
-    
+
     candidates = []
-    
+
     # 遍历4个方向
     for facing in Facing:
         dx, dy = facing.value
         nx = x + dx
         ny = y + dy
-        
+
         # 条件1：相邻格不是障碍
         if (nx, ny) in obstacles:
             continue
-        
+
         # 条件2：新曼哈顿距离严格小于当前
         new_manhattan = abs(nx - tx) + abs(ny - ty)
         if new_manhattan < current_manhattan:
             candidates.append(facing)
-    
+
     # 规则3：无候选，直接返回 current_facing
     if not candidates:
         return current_facing
-    
+
     # 规则2：多个候选时，优先走【与目标绝对坐标差更大的轴】
     delta_x = abs(tx - x)
     delta_y = abs(ty - y)
-    
+
     if delta_x > delta_y:
         # x轴差值更大 → 优先选水平方向 LEFT/RIGHT
         preferred_axis = 'x'
@@ -363,7 +360,7 @@ def next_step_toward(pos, target, obstacles, current_facing=Facing.UP):
     else:
         # delta_x == delta_y，两轴相等，任选其一（一般优先x或者y，看题目约定）
         preferred_axis = 'x'
-    
+
     # 筛选候选里属于优先轴的方向
     preferred_candidates = []
     for f in candidates:
@@ -372,13 +369,12 @@ def next_step_toward(pos, target, obstacles, current_facing=Facing.UP):
             preferred_candidates.append(f)
         elif preferred_axis == 'y' and fd_y != 0:
             preferred_candidates.append(f)
-    
+
     # 如果优先轴存在候选，返回第一个；否则退而求其次选剩下候选里第一个
     if preferred_candidates:
         return preferred_candidates[0]
     else:
         return candidates[0]
-
 
 
 # ---------------------------------------------------------------------------
@@ -405,7 +401,8 @@ def decide(sensor, state, hp, heat):
 
     enemy_frames = sensor["enemy_frames"]
     # enemy_frames必须是序列，长度1~6
-    if not isinstance(enemy_frames, (list, tuple)) or len(enemy_frames) < 1 or len(enemy_frames) > 6:
+    if not isinstance(enemy_frames, (list, tuple)) or len(
+            enemy_frames) < 1 or len(enemy_frames) > 6:
         raise ValueError("invalid enemy_frames")
 
     # state必须是SentryState成员
@@ -445,7 +442,7 @@ def decide(sensor, state, hp, heat):
         else:
             if robot_type == "HERO":
                 return ("MOVE_RIGHT", SentryState.ENGAGE)
-            else: # INFANTRY步兵
+            else:  # INFANTRY步兵
                 return ("MOVE_LEFT", SentryState.ENGAGE)
 
     # R5 交火保持 state == ENGAGE 且不可见
@@ -458,8 +455,8 @@ def decide(sensor, state, hp, heat):
     # R6 敌情确认 state为PATROL/SUSPECT，并且可见
     if state in (SentryState.PATROL, SentryState.SUSPECT) and visible:
         # enemy_frames长度≥2，末两位（当前帧、前一帧）均为True
-        if len(enemy_frames) >=2 and enemy_frames[-1] and enemy_frames[-2]:
-            if enemy_dist <=3:
+        if len(enemy_frames) >= 2 and enemy_frames[-1] and enemy_frames[-2]:
+            if enemy_dist <= 3:
                 return ("SHOOT", SentryState.ENGAGE)
             else:
                 if robot_type == "HERO":
@@ -474,7 +471,7 @@ def decide(sensor, state, hp, heat):
     if state in (SentryState.PATROL, SentryState.SUSPECT) and not visible:
         if state == SentryState.PATROL:
             return ("PATROL_MOVE", SentryState.PATROL)
-        else: # SUSPECT
+        else:  # SUSPECT
             return ("SCAN", SentryState.SUSPECT)
 
     # 理论不会走到这里，规则覆盖全部合法输入
@@ -500,7 +497,7 @@ def run_patrol(grid, max_steps=500):
     current_facing = Facing.UP
     current_state = SentryState.PATROL
     battery = 1000  # 总电量1000，题目规范
-    
+
     # 初始位置记录
     pos = grid.get_pos()
     visited.add(pos)
@@ -514,7 +511,7 @@ def run_patrol(grid, max_steps=500):
         if pos == target:
             found_enemy = True
             break
-        
+
         # --- SENSE 感知阶段 ---
         sensor = grid.get_sensor_data()
         hp = grid.get_hp()
@@ -532,11 +529,11 @@ def run_patrol(grid, max_steps=500):
         # --- ACT 执行动作 move_forward ---
         # move_forward返回：(new_pos, hit_collision: bool)
         new_pos, collided = grid.move_forward(current_facing)
-        battery -= 1 # 每一步耗电
-        step_count +=1
+        battery -= 1  # 每一步耗电
+        step_count += 1
 
         if collided:
-            collision_count +=1
+            collision_count += 1
         pos = new_pos
         visited.add(pos)
 
@@ -567,7 +564,8 @@ def report_to_json(stats):
 # ---------------------------------------------------------------------------
 # Bonus：BFS 全局最短路（题面 Bonus·BFS 语义与排行榜）
 # ---------------------------------------------------------------------------
-from collections import deque
+
+
 def bfs_path_length(start, target, obstacles):
     """TODO(Bonus)：BFS 全局最短路步数；返回语义与边界职责见题面 Bonus 规范。"""
     """
@@ -582,10 +580,10 @@ def bfs_path_length(start, target, obstacles):
         return 0
 
     # 4个移动方向：上下左右
-    dirs = [(1,0), (-1,0), (0,1), (0,-1)]
+    dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     visited = set()
     q = deque()
-    q.append( (start[0], start[1], 0) )
+    q.append((start[0], start[1], 0))
     visited.add(start)
 
     while q:
@@ -599,7 +597,7 @@ def bfs_path_length(start, target, obstacles):
             # 不在障碍物、没有访问过
             if pos not in obstacles and pos not in visited:
                 visited.add(pos)
-                q.append( (nx, ny, dist + 1) )
+                q.append((nx, ny, dist + 1))
     # 队列空，找不到目标，不可达
     return -1
 
